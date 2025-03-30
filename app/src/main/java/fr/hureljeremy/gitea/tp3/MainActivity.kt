@@ -1,47 +1,116 @@
 package fr.hureljeremy.gitea.tp3
 
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
 import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
+import android.os.IBinder
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import fr.hureljeremy.gitea.tp3.ui.theme.TP3Theme
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import fr.hureljeremy.gitea.tp3.services.NavigationService
+import java.util.logging.Logger
 
-class MainActivity : ComponentActivity() {
+
+class MainActivity : AppCompatActivity() {
+
+    data class Destination(val name: String, val activity: Class<out AppCompatActivity>)
+
+    lateinit var navigationService: NavigationService
+    private var bound = false
+
+    private val pages = listOf(
+        Destination("home", MainActivity::class.java),
+        Destination("auth", AuthActivity::class.java),
+    )
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        Logger.getLogger("MainActivity").info("onCreate")
         super.onCreate(savedInstanceState)
+
         enableEdgeToEdge()
-        setContent {
-            TP3Theme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+        setContentView(R.layout.home)
+
+        val btnNewRegistration =
+            findViewById<
+                    com.google.android.material.button.MaterialButton
+                    >(R.id.buttonNewRegistration)
+               val btnLogin = findViewById<com.google.android.material.button.MaterialButton>(R.id.buttonLogin)
+
+                btnNewRegistration.setOnClickListener {
+                    register(this)
+                }
+
+                btnLogin.setOnClickListener {
+                    login(this)
+                }
+
+    }
+
+
+    private  fun login(
+        context: Context
+    ) {
+        navigationService.navigate(context, "auth",
+            Bundle().apply {
+                putString("action", "login")
+            }
+        )
+    }
+
+    private fun register(
+        context: Context
+    ) {
+        navigationService.navigate(context, "auth",
+            Bundle().apply {
+                putString("action", "register")
+            }
+        )
+    }
+
+    private val connection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName, service: IBinder) {
+            val binder = service as NavigationService.LocalBinder
+            navigationService = binder.getService()
+            if (!bound) {
+                val registered = navigationService.getDestinations()
+                for (page in pages) {
+                    if (registered.contains(page.name)) {
+                        continue
+                    }
+                    navigationService.registerDestination(page.name, page.activity)
                 }
             }
+            bound = true
+
+
+        }
+
+        override fun onServiceDisconnected(name: ComponentName) {
+            bound = false
         }
     }
-}
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+    override fun onStart() {
+        super.onStart()
+        Intent(this, NavigationService::class.java).also { intent ->
+            bindService(intent, connection, Context.BIND_AUTO_CREATE)
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    TP3Theme {
-        Greeting("Android")
+        }
+
+
     }
+
+    override fun onStop() {
+        super.onStop()
+        if (bound) {
+            unbindService(connection)
+            bound = false
+        }
+    }
+
+
 }

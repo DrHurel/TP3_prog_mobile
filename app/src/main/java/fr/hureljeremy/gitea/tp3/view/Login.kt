@@ -1,60 +1,122 @@
 package fr.hureljeremy.gitea.tp3.view
 
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
 import android.os.Bundle
+import android.os.IBinder
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.textfield.TextInputEditText
 import fr.hureljeremy.gitea.tp3.R
+import fr.hureljeremy.gitea.tp3.services.Auth
+import fr.hureljeremy.gitea.tp3.services.NavigationService
 
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
-
-/**
- * A simple [Fragment] subclass.
- * Use the [Login.newInstance] factory method to
- * create an instance of this fragment.
- */
 class Login : Fragment() {
-    // TODO: Rename and change types of parameters
-    private var param1: String? = null
-    private var param2: String? = null
+
+    private lateinit var usernameInput: TextInputEditText
+    private lateinit var passwordInput: TextInputEditText
+    private lateinit var loginButton: MaterialButton
+    private lateinit var registerButton: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        arguments?.let {
-            param1 = it.getString(ARG_PARAM1)
-            param2 = it.getString(ARG_PARAM2)
-        }
     }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_login, container, false)
+        val view = inflater.inflate(R.layout.fragment_login, container, false)
+
+        initializeViews(view)
+        setupClickListeners()
+
+        return view
+    }
+
+    private fun initializeViews(view: View) {
+        usernameInput = view.findViewById(R.id.login_input)
+        passwordInput = view.findViewById(R.id.password_input)
+        loginButton = view.findViewById(R.id.login_btn)
+        registerButton = view.findViewById(R.id.register_btn)
+    }
+
+    private fun setupClickListeners() {
+        loginButton.setOnClickListener {
+            handleLogin()
+        }
+
+        registerButton.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.auth_container, Register())
+                .commit()
+        }
+    }
+
+    private fun handleLogin() {
+        val username = usernameInput.text.toString()
+        val password = passwordInput.text.toString()
+
+        if (authService.authenticate(username, password).isSuccess) {
+            // Login successful
+            activity?.finish()
+            navigationService.navigate(requireContext(), "home")
+        } else {
+            // Show error
+            usernameInput.error = "Invalid credentials"
+            passwordInput.error = "Invalid credentials"
+        }
     }
 
     companion object {
-        /**
-         * Use this factory method to create a new instance of
-         * this fragment using the provided parameters.
-         *
-         * @param param1 Parameter 1.
-         * @param param2 Parameter 2.
-         * @return A new instance of fragment Login.
-         */
-        // TODO: Rename and change types and number of parameters
         @JvmStatic
-        fun newInstance(param1: String, param2: String) =
-            Login().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
-                    putString(ARG_PARAM2, param2)
-                }
-            }
+        fun newInstance() = Login()
+    }
+
+    private lateinit var navigationService: NavigationService
+    private lateinit var authService: Auth
+
+    private val connectionNav = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            val binder = service as NavigationService.LocalBinder
+            navigationService = binder.getService()
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            // Do nothing
+        }
+    }
+
+    private val connectionAuth = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            val binder = service as Auth.LocalBinder
+            authService = binder.getService()
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            // Do nothing
+        }
+    }
+
+override fun onStart() {
+    super.onStart()
+    val context = requireContext()
+   Intent(context, NavigationService::class.java).also { intent ->
+        context.bindService(intent, connectionNav, Context.BIND_AUTO_CREATE)
+    }
+   Intent(context, Auth::class.java).also { intent ->
+        context.bindService(intent, connectionAuth, Context.BIND_AUTO_CREATE)
+    }
+}
+    override fun onStop() {
+        super.onStop()
+        requireContext().unbindService(connectionNav)
+        requireContext().unbindService(connectionAuth)
     }
 }

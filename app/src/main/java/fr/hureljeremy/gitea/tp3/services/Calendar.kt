@@ -2,14 +2,20 @@ package fr.hureljeremy.gitea.tp3.services
 
 import android.app.Service
 import android.content.Intent
+import android.os.Binder
 import android.os.IBinder
 
 class Calendar : Service() {
 
     private val events = mutableListOf<String>()
+    private val binder = LocalBinder()
+
+    inner class LocalBinder : Binder() {
+        fun getService(): Calendar = this@Calendar
+    }
 
     override fun onBind(intent: Intent): IBinder {
-        TODO("Return the communication channel to the service.")
+        return binder
     }
 
     public fun addEvent(title: String, description: String, date: String): Result<String> {
