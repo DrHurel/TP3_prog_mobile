@@ -8,22 +8,22 @@ import android.os.Bundle
 import android.os.IBinder
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import fr.hureljeremy.gitea.tp3.services.Auth
 import fr.hureljeremy.gitea.tp3.services.NavigationService
 import java.util.logging.Logger
 
 
 class MainActivity : AppCompatActivity() {
 
-    data class Destination(val name: String, val activity: Class<out AppCompatActivity>)
+    data class Destination(val name: Pages, val activity: Class<out AppCompatActivity>)
 
     lateinit var navigationService: NavigationService
     private var bound = false
 
     private val pages = listOf(
-        Destination("home", MainActivity::class.java),
-        Destination("auth", AuthActivity::class.java),
+        Destination(Pages.HOME, MainActivity::class.java),
+        Destination(Pages.AUTH, AuthActivity::class.java),
+        Destination(Pages.PLANNING, PlanningActivity::class.java)
     )
 
 
@@ -48,13 +48,20 @@ class MainActivity : AppCompatActivity() {
                     login(this)
                 }
 
+
     }
 
 
     private  fun login(
         context: Context
     ) {
-        navigationService.navigate(context, "auth",
+
+        if (authService.isUserLoggedIn()) {
+            navigationService.navigate(context, Pages.PLANNING)
+            return
+        }
+
+        navigationService.navigate(context, Pages.AUTH,
             Bundle().apply {
                 putString("action", "login")
             }
@@ -64,7 +71,7 @@ class MainActivity : AppCompatActivity() {
     private fun register(
         context: Context
     ) {
-        navigationService.navigate(context, "auth",
+        navigationService.navigate(context, Pages.AUTH,
             Bundle().apply {
                 putString("action", "register")
             }
@@ -94,11 +101,27 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    lateinit var authService: Auth
+
+    private val connectionAuth = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            val binder = service as Auth.LocalBinder
+            authService = binder.getService()
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            // Do nothing
+        }
+    }
+
     override fun onStart() {
         super.onStart()
         Intent(this, NavigationService::class.java).also { intent ->
             bindService(intent, connection, Context.BIND_AUTO_CREATE)
 
+        }
+        Intent(this, Auth::class.java).also { intent ->
+            bindService(intent, connectionAuth, Context.BIND_AUTO_CREATE)
         }
 
 

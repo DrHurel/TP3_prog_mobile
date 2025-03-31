@@ -11,15 +11,15 @@ import androidx.room.PrimaryKey
         ForeignKey(
             entity = User::class,
             parentColumns = ["login"],
-            childColumns = ["userId"],
+            childColumns = ["login"],
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index(value = ["userId", "date"], unique = true)]
+    indices = [Index(value = ["login", "date"], unique = true)]
 )
 data class Event(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val userId: String,
+    val login: String,
     val date: String,
     val slot1: String?, // 08h-10h
     val slot2: String?, // 10h-12h

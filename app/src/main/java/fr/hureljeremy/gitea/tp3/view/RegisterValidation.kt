@@ -11,6 +11,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import fr.hureljeremy.gitea.tp3.Pages
 import fr.hureljeremy.gitea.tp3.R
 import fr.hureljeremy.gitea.tp3.data.User
 import fr.hureljeremy.gitea.tp3.services.Auth
@@ -77,7 +78,7 @@ class RegisterValidation : Fragment() {
                )
             )
             if (result.isSuccess) {
-                navigationService.navigate(requireContext(), "auth", Bundle().apply {
+                navigationService.navigate(requireContext(), Pages.AUTH, Bundle().apply {
                     putString("action", "login")
                 })}
         }

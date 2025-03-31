@@ -4,11 +4,16 @@ import android.app.Service
 import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
+import fr.hureljeremy.gitea.tp3.data.AppDatabase
+import fr.hureljeremy.gitea.tp3.data.Event
+import fr.hureljeremy.gitea.tp3.data.EventDao
+import fr.hureljeremy.gitea.tp3.data.User
 
 class Calendar : Service() {
 
     private val events = mutableListOf<String>()
     private val binder = LocalBinder()
+
 
     inner class LocalBinder : Binder() {
         fun getService(): Calendar = this@Calendar
@@ -18,14 +23,18 @@ class Calendar : Service() {
         return binder
     }
 
-    public fun addEvent(title: String, description: String, date: String): Result<String> {
-        if (title.isEmpty() || description.isEmpty() || date.isEmpty()) {
-            return Result.failure(Exception("Title, description or date is empty"))
-        }
+    public suspend fun updateEvent(user:User,
+                                date: String,
+                                slot1 : String,
+                                slot2 : String,
+                                slot3 : String,
+                                slot4 : String): Result<String> {
 
-        if (title.length > 50 || description.length > 100) {
-            return Result.failure(Exception("Title or description is too long"))
-        }
+        val event = Event(login =user.login, date = date, slot1 = slot1, slot2 = slot2, slot3 = slot3, slot4 = slot4)
+        val database = AppDatabase.getDatabase(applicationContext)
+
+
+        database.planningDao().insertEvent(event)
 
         return Result.success("Event added")
     }
@@ -38,24 +47,19 @@ class Calendar : Service() {
         return Result.success("Event removed")
     }
 
-    public fun updateEvent(title: String, description: String, date: String): Result<String> {
-        if (title.isEmpty() || description.isEmpty() || date.isEmpty()) {
-            return Result.failure(Exception("Title, description or date is empty"))
-        }
 
-        if (title.length > 50 || description.length > 100) {
-            return Result.failure(Exception("Title or description is too long"))
-        }
 
-        return Result.success("Event updated")
-    }
+    public suspend fun getEvents(
+        user: User,
+        date : String
+    ): Result<Event> {
+        val database = AppDatabase.getDatabase(applicationContext)
+        val events = database.planningDao().getPlanningByUserAndDate(user.login, date)
+            ?: return Result.failure(Exception("No events found"))
 
-    public fun getEvents(): Result<List<String>> {
-        return Result.success(listOf("Event 1", "Event 2", "Event 3"))
+        return Result.success(events)
     }
 
 
-    private fun loadEvents(): List<String> {
-        return listOf("Event 1", "Event 2", "Event 3")
-    }
+
 }

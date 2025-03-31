@@ -14,9 +14,9 @@ interface EventDao {
     @Update
     suspend fun updatePlanning(planning: Event)
 
-    @Query("SELECT * FROM event WHERE userId = :userId AND date = :date")
-    suspend fun getPlanningByUserAndDate(userId: Int, date: String): Event?
+    @Query("SELECT * FROM event WHERE login = :login AND date = :date")
+    suspend fun getPlanningByUserAndDate(login: String, date: String): Event?
 
-    @Query("SELECT * FROM event WHERE userId = :userId ORDER BY date DESC")
-    suspend fun getAllPlanningsByUser(userId: Int): List<Event>
+    @Query("SELECT * FROM event WHERE login = :login ORDER BY date DESC")
+    suspend fun getAllPlanningsByUser(login: String): List<Event>
 }

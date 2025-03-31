@@ -13,6 +13,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
+import fr.hureljeremy.gitea.tp3.Pages
 import fr.hureljeremy.gitea.tp3.R
 import fr.hureljeremy.gitea.tp3.services.Auth
 import fr.hureljeremy.gitea.tp3.services.NavigationService
@@ -63,14 +64,17 @@ class Login : Fragment() {
         val username = usernameInput.text.toString()
         val password = passwordInput.text.toString()
 
-        if (authService.authenticate(username, password).isSuccess) {
+        val authenticate = authService.authenticate(username, password)
+        if (authenticate.isSuccess) {
             // Login successful
             activity?.finish()
-            navigationService.navigate(requireContext(), "home")
+            navigationService.navigate(requireContext(), Pages.PLANNING)
         } else {
             // Show error
-            usernameInput.error = "Invalid credentials"
-            passwordInput.error = "Invalid credentials"
+
+val errorMessage = authenticate.exceptionOrNull()?.message ?: "Authentication failed"
+            usernameInput.error = errorMessage
+            passwordInput.error = errorMessage
         }
     }
 

@@ -16,7 +16,7 @@
             android:name=".PlanningSummary"
             android:exported="false" />
         <activity
-            android:name=".CalendarActivity"
+            android:name=".PlanningActivity"
             android:exported="false" />
         <activity
             android:name=".AuthActivity"

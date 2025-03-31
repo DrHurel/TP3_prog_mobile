@@ -4,8 +4,8 @@ import android.app.Service
 import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
-import androidx.core.content.ContentProviderCompat.requireContext
 import fr.hureljeremy.gitea.tp3.data.AppDatabase
+import fr.hureljeremy.gitea.tp3.data.User
 import kotlinx.coroutines.runBlocking
 import java.security.MessageDigest
 
@@ -13,6 +13,8 @@ class Auth : Service() {
 
     private val binder = LocalBinder()
     private lateinit var database: AppDatabase
+    private var userLoggedIn: Boolean = false
+    private  var user: User? = null
 
     inner class LocalBinder : Binder() {
         fun getService(): Auth = this@Auth
@@ -22,9 +24,9 @@ class Auth : Service() {
         return binder
     }
 
-    override  fun onCreate() {
+    override fun onCreate() {
         super.onCreate()
-database = AppDatabase.getDatabase(applicationContext)
+        database = AppDatabase.getDatabase(applicationContext)
     }
 
     private fun hashPassword(password: String): String {
@@ -34,7 +36,7 @@ database = AppDatabase.getDatabase(applicationContext)
         return digest.fold("") { str, it -> str + "%02x".format(it) }
     }
 
-    public fun authenticate(username: String, password: String): Result<String> {
+    fun authenticate(username: String, password: String): Result<String> {
         if (username.isEmpty() || password.isEmpty()) {
             return Result.failure(Exception("Username or password is empty"))
         }
@@ -51,9 +53,11 @@ database = AppDatabase.getDatabase(applicationContext)
         return runBlocking {
             try {
                 val hashedPassword = hashPassword(password)
-                val user = database.userDao().getUserByUsername(username)
+                user = database.userDao().getUserByUsername(username)
 
-                if (user != null && user.password == hashedPassword) {
+                if (user != null && user!!.password == hashedPassword) {
+                    userLoggedIn = true
+
                     Result.success("User authenticated")
                 } else {
                     Result.failure(Exception("Invalid username or password"))
@@ -64,10 +68,9 @@ database = AppDatabase.getDatabase(applicationContext)
         }
 
 
-
     }
 
-    public fun register(user : fr.hureljeremy.gitea.tp3.data.User): Result<String> {
+    fun register(user: fr.hureljeremy.gitea.tp3.data.User): Result<String> {
         if (user.login.isEmpty() || user.password.isEmpty()) {
             return Result.failure(Exception("Username or password is empty"))
         }
@@ -92,15 +95,18 @@ database = AppDatabase.getDatabase(applicationContext)
 
     }
 
-    public fun logout(): Result<String> {
+    fun logout(): Result<String> {
+        userLoggedIn = false
         return Result.success("User logged out")
     }
 
-    public  fun isUserLoggedIn(): Boolean {
-        return true
+    fun isUserLoggedIn(): Boolean {
+        return userLoggedIn
     }
 
-
+    fun getUser(): User? {
+        return user
+    }
 
 
 }
